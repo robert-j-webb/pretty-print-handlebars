@@ -1,0 +1,9 @@
+.DS_Store
+# dependencies
+npm-debug.log
+/node_modules
+/bower_components
+/dist
+/tmp
+/log
+/logs

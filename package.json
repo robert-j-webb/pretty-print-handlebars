@@ -1,0 +1,39 @@
+{
+  "name": "pretty-handlebars",
+  "version": "1.0.0",
+  "description": "A utility to pretty print hbs files, specifically those parsed by the glimmer-vm",
+  "main": "start.js",
+  "scripts": {
+    "test": "npm run lint && mocha --full-trace tests/.",
+    "test:watch": "watchman-make -p '**/*js' --run 'mocha --full-trace tests/.'",
+    "lint": "node node_modules/eslint/bin/eslint ."
+  },
+  "keywords": [
+    "handlebars",
+    "glimmer",
+    "glimmer-vm",
+    "pretty-print",
+    "prettier",
+    "hbs",
+    "ember"
+  ],
+  "author": "Robert Webb",
+  "license": "MIT",
+  "dependencies": {
+    "@glimmer/syntax": "^0.30.3",
+    "@glimmer/vm": "^0.30.3"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-diff": "^1.0.1",
+    "chai-string": "^1.4.0",
+    "css": "^2.2.1",
+    "eslint": "^4.12.1",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-prettier": "^2.3.1",
+    "fb-watchman": "^2.0.0",
+    "mocha": "^3.5.3",
+    "prettier": "^1.9.1"
+  }
+}
