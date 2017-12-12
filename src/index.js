@@ -10,6 +10,9 @@ const parseElseIf = require('./parse-else-if');
  * @param {String} hbsString
  */
 function prettyPrint(hbsString) {
+  if (hbsString.includes('unpropableStringInText')) {
+    throw new Error('That string is unlikely and not allowed');
+  }
   let ast = glimmer.preprocess(hbsString, {
     plugins: {
       ast: [stripWhiteSpace, setParent]
@@ -17,7 +20,7 @@ function prettyPrint(hbsString) {
   });
   const prettyStr = print(ast);
   const withoutVoidTags = removeVoidTags(prettyStr);
-  return parseElseIf(withoutVoidTags);
+  return parseElseIf(withoutVoidTags).replace(/unpropableStringInText/g, '\n');
 }
 
 module.exports = prettyPrint;

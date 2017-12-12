@@ -12,17 +12,12 @@ function shouldBreak(node) {
     case 'BlockStatement':
     case 'ElementNode':
     case 'MustacheStatement':
-      return prevNewLine(node) + len(node) > COLUMN_BREAK;
     case 'SubExpression':
     case 'Hash':
     case 'HashPair':
     case 'ConcatStatement':
     case 'AttrNode': {
-      if (shouldBreak(node.parent)) {
-        return prevNewLine(node) + len(node) > COLUMN_BREAK;
-      } else {
-        return false;
-      }
+      return prevNewLine(node) + len(node) > COLUMN_BREAK;
     }
     default:
       throw new Error(node.type + ' not for breaking ' + node.loc.start.line);
@@ -30,11 +25,7 @@ function shouldBreak(node) {
 }
 
 function prevNewLine(node) {
-  if (!node.parent) {
-    return 0;
-  }
-  const depth = getDepth(node);
-  return depth * TAB_SIZE;
+  return getDepth(node) * TAB_SIZE;
 }
 
 module.exports = shouldBreak;

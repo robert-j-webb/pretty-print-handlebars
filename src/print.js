@@ -28,8 +28,7 @@ function build(ast) {
         if (chainBlock) {
           chainBlock['chained'] = true;
         }
-        let body = buildEach(ast.body.filter(checkIfEmpty)).join('');
-        output.push(body);
+        output.push(buildEach(ast.body.filter(checkIfEmpty)).join(''));
       }
       break;
     /**
@@ -78,11 +77,12 @@ function build(ast) {
     case 'BlockStatement':
       {
         const lines = [];
+        const needsBreak = shouldBreak(ast) && ast.hash.pairs.length === 0;
 
         if (ast['chained']) {
-          lines.push(['{{else ', pathParams(ast), '}}'].join(''));
+          lines.push(['{{else ', pathParams(ast, needsBreak), '}}'].join(''));
         } else {
-          lines.push(openBlock(ast));
+          lines.push(openBlock(ast, needsBreak));
         }
 
         lines.push(build(ast.program));
@@ -123,21 +123,25 @@ function build(ast) {
      */
     case 'SubExpression':
       {
+        const parentBreak = shouldBreak(ast.parent);
+        if (parentBreak) {
+          output.push(calcWhiteSpace(ast));
+        }
         if (shouldBreak(ast)) {
-          const splitParams = splitNoParens(pathParams(ast));
+          const splitParams = splitNoParens(pathParams(ast))
+            .filter(str => str.trim() !== '')
+            .map(param => param.trim());
           output.push(
-            calcWhiteSpace(ast),
             '(',
             splitParams.reduce((str, param, idx, arr) => {
               if (idx !== arr.length - 1) {
-                return str + param.trim() + calcWhiteSpace(ast, 1);
+                return str + param + calcWhiteSpace(ast, 1);
               } else {
                 return str + param + (idx === 0 ? ' ' : '');
               }
             }, ''),
             calcWhiteSpace(ast),
-            ')',
-            calcWhiteSpace(ast, -1)
+            ')'
           );
         } else {
           output.push('(', pathParams(ast), ')');
@@ -166,14 +170,14 @@ function build(ast) {
       {
         const hash = ast.parent;
         const isLastHashPair =
-          hash.pairs.findIndex(n => n === ast) === hash.pairs.length - 1;
+          hash.pairs.indexOf(ast) === hash.pairs.length - 1;
+        const isFirstHashPair = hash.pairs.indexOf(ast) === 0;
 
-        const isFirstHashPair = hash.pairs.findIndex(n => n === ast) === 0;
         if (ast.shouldSpace) {
           output.push(
             isFirstHashPair ? calcWhiteSpace(ast) : '',
-            `${ast.key}=${build(ast.value)}` +
-              calcWhiteSpace(ast, isLastHashPair ? -1 : 0)
+            `${ast.key}=${build(ast.value)}`,
+            calcWhiteSpace(ast, isLastHashPair ? -1 : 0)
           );
         } else {
           output.push(`${ast.key}=${build(ast.value)}`);
@@ -299,7 +303,7 @@ function buildEach(asts) {
   return asts.map(build);
 }
 
-function pathParams(ast, shouldBreak) {
+function pathParams(ast, shouldBreak = false) {
   let path;
 
   switch (ast.type) {
@@ -323,7 +327,7 @@ function pathParams(ast, shouldBreak) {
   return compactJoin(
     [
       path,
-      buildEach(ast.params).join(shouldBreak ? calcWhiteSpace(ast) : ' '),
+      buildEach(ast.params).join(shouldBreak ? calcWhiteSpace(ast, 1) : ' '),
       build(ast.hash)
     ],
     ' '
@@ -334,20 +338,35 @@ function compactJoin(array, delimiter) {
   return compact(array).join(delimiter || '');
 }
 
-function blockParams(block) {
+function getBlockParams(block) {
   const params = block.program.blockParams;
+
   if (params.length) {
-    return ` as |${params.join(' ')}|`;
+    if (shouldBreak(block)) {
+      return calcWhiteSpace(block) + `as |${params.join(' ')}|`;
+    } else {
+      return ` as |${params.join(' ')}|`;
+    }
   }
 
   return null;
 }
 
-function openBlock(block) {
+function openBlock(block, needsBreak) {
+  const blockParams = getBlockParams(block);
+  if (blockParams) {
+    return [
+      '{{#',
+      pathParams(block, needsBreak),
+      blockParams,
+      '}}',
+      calcWhiteSpace(block, 1)
+    ].join('');
+  }
   return [
     '{{#',
-    pathParams(block),
-    blockParams(block),
+    pathParams(block, needsBreak),
+    needsBreak ? calcWhiteSpace(block) : '',
     '}}',
     calcWhiteSpace(block, 1)
   ].join('');

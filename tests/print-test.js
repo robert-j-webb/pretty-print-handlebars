@@ -63,7 +63,7 @@ describe('Glimmer-vm testing', function() {
       });
     });
 
-    it.skip('Mustache with many hashes inside sub-expression', function() {
+    it('Mustache with many hashes inside sub-expression', function() {
       const { test, result } = cases[7];
       expect(prettyPrint(test).trim()).not.differentFrom(result.trim(), {
         showSpace: true
@@ -91,39 +91,40 @@ describe('Glimmer-vm testing', function() {
       });
     });
 
-    it.skip('case 11 Large with statement', function() {
+    it('case 11 Large with statement', function() {
       const { test, result } = cases[11];
       expect(prettyPrint(test).trim()).not.differentFrom(result.trim(), {
         showSpace: true
       });
     });
 
-    it.skip('case 12: Mustache with many helpers and hashes', function() {
+    it('case 12: Mustache with many helpers and hashes', function() {
       const { test, result } = cases[12];
       expect(prettyPrint(test).trim()).not.differentFrom(result.trim(), {
         showSpace: true
       });
     });
 
-    it.skip('Mustache with hash and params', function() {
+    it('Mustache with hash and params', function() {
       const { test, result } = cases[13];
       expect(prettyPrint(test).trim()).not.differentFrom(result.trim(), {
         showSpace: true
       });
     });
 
-    it.skip('Mustache statements next to each other', function() {
+    it('Mustache statements next to each other', function() {
       const { test, result } = cases[14];
       expect(prettyPrint(test).trim()).not.differentFrom(result.trim(), {
         showSpace: true
       });
     });
 
-    it.skip('Some weird sub expression nesting', function() {
+    it('Some weird sub expression nesting', function() {
       const { test, result } = cases[15];
       expect(prettyPrint(test).trim()).not.differentFrom(result.trim(), {
         showSpace: true
       });
+      throw new Error('fail')
     });
 
     it('Proper indentation with sub expressions', function() {

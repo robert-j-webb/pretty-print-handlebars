@@ -10,7 +10,13 @@ function splitNoParens(strToSplit) {
     numRightParens = 0,
     str = '',
     res = [];
+  if (!matches) {
+    return '';
+  }
   matches.forEach(elem => {
+    if (/(\w+=\s+)/.test(elem)) {
+      return (res = res.concat(equalsCase(elem)));
+    }
     if (elem === '(') {
       ++numLeftParens;
     } else if (elem === ')') {
@@ -25,11 +31,33 @@ function splitNoParens(strToSplit) {
         str = '';
       }
     } else {
-      const withoutSpaces = elem.match(/([^ ]+)/g) || [];
-      res = res.concat(withoutSpaces);
+      // Check to see if the first element before the space has the equal sign
+      if (elem[elem.length - 1] === '=') {
+        res.push(elem);
+      } else {
+        const withoutSpaces = elem.match(/([^\s]+)/g) || [];
+        res = res.concat(withoutSpaces);
+      }
     }
   });
-  return res;
+  // If there is an equals sign, we want to concatenate the elements together
+  // This is to preserve hashPair spacing
+  return res.reduce((res, curr) => {
+    const prev = res[res.length - 1];
+    const trimPrev = prev ? prev.trim() : null;
+    if (trimPrev && trimPrev[trimPrev.length - 1] === '=') {
+      res[res.length - 1] = prev + curr;
+    } else {
+      res.push(curr);
+    }
+    return res;
+  }, []);
+}
+
+function equalsCase(elem) {
+  const equals = (elem.match(/(\w+=\s*)/) || [])[0];
+  const notEquals = elem.slice(0, elem.indexOf(equals));
+  return [...splitNoParens(notEquals), equals].filter(a => a !== '');
 }
 
 module.exports = splitNoParens;

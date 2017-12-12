@@ -4,6 +4,7 @@
  * @param {Node} node
  */
 function getDepth(node) {
+  // SubExpressions themselves count as + 1 depth
   let num = 0;
   let parent = node.parent;
   while (parent) {
@@ -12,6 +13,7 @@ function getDepth(node) {
       case 'MustacheStatement':
       case 'BlockStatement':
       case 'SubExpression':
+      case 'HashPair':
         num++;
     }
     parent = parent.parent;

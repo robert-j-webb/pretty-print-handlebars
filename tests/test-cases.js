@@ -64,21 +64,22 @@ module.exports = function() {
 }}
     `,
       result: `
-{{mustache key=
-  (helper
-    "a"
-    "long"
-    expression
-    "that"
-    "will"
-    require
-    a
-    "line"
-    break
-    because
-    "its"
-    long
-  )
+{{mustache 
+  key=
+    (helper
+      "a"
+      "long"
+      expression
+      "that"
+      "will"
+      require
+      a
+      "line"
+      break
+      because
+      "its"
+      long
+    )
 }}`
     },
     {
@@ -95,16 +96,11 @@ module.exports = function() {
 }}`
     },
     {
-      test: `{{mustache param  bigKey=(helper bigKey=1 bigKey=2 bigKey=3 bigKey=last)}} `,
+      test: `
+{{mustache param bigKey=(helper hello bigKey=1 bigKey=2 bigKey=3 bigKey=4 bigKey=last)}}`,
       result: `
-{{mustache param
-  bigKey=
-    (helper hello
-      bigKey=1
-      bigKey=2
-      bigKey=3
-      bigKey=last
-    )
+{{mustache param 
+  bigKey=(helper hello bigKey=1 bigKey=2 bigKey=3 bigKey=4 bigKey=last)
 }} `
     },
     {
@@ -172,15 +168,15 @@ module.exports = function() {
       </div>
     {{/nested-component}}
   {{else if param}}
-    <div local-class="stringLiteral"
-      data-test={{hook "stringLiteral"}}>
-      {{component/nested-expression param
+    <div local-class="stringLiteral" data-test={{hook "stringLiteral"}}>
+      {{component/nested-expression param 
         hashValue=
           (simple-helper
             (hash hashKey=hashValue.expression assignParam=assignParam)
           )
         hashKey=hashValue.value
-        property=(if service.hasProperty paramExpression)}}
+        property=(if service.hasProperty paramExpression)
+      }}
     </div>
   {{/if}}
 {{/block-component}}
@@ -196,22 +192,23 @@ as |block assign|}}
 {{/with}}`
     },
     {
-      test: `{{#large-block-component 
-      hashKey=hashKey 
-        foobar=foobar 
-        hashValue=hashValue 
-        hashKey=(not (or subExpressionParam subExpressionParam param param param param))
-        hashKey=(action "stringLiteral")
-      }}
+      test: `
+{{#large-block-component 
+  hashKey=hashKey 
+  foobar=foobar 
+  hashValue=hashValue 
+  hashKey=(not (and subExpressionParam subExpressionParam param param param param param))
+  hashKey=(action "stringLiteral")
+}}
      {{/large-block-component}}`,
       result: `
-{{#large-block-component
+{{#large-block-component 
   hashKey=hashKey
   foobar=foobar
   hashValue=hashValue
   hashKey=
     (not
-      (or subExpressionParam subExpressionParam param param param param)
+      (and subExpressionParam subExpressionParam param param param param param)
     )
   hashKey=(action "stringLiteral")
 }}
@@ -221,7 +218,7 @@ as |block assign|}}
     {
       test: `{{foobar-sub-component/nested-expression param hasVideoSlide=hashValue hashKey=(action "stringLiteral")}}`,
       result: `
-{{foobar-sub-component/nested-expression param
+{{foobar-sub-component/nested-expression param 
   hasVideoSlide=hashValue
   hashKey=(action "stringLiteral")
 }}`
@@ -231,6 +228,7 @@ as |block assign|}}
 {{#if}}
   hi
 {{/if}}
+
 
 {{yield (hash hashKey=(local-class "stringLiteral"))}}
 
@@ -242,7 +240,7 @@ as |block assign|}}
   hi
 {{/if}}
 
-{{yield (hash hashKey=local-class "stringLiteral"))}}
+{{yield (hash hashKey=(local-class "stringLiteral"))}}
 
 {{#foobar-sub-component/nested foobar as |block assign|}}
   hi
@@ -252,10 +250,11 @@ as |block assign|}}
       test: `
 {{foobar-sub-component/foobar-foo 
   hook="stringLiteral" 
-  foo=(t (concat "stringLiteral" (get blockParam "stringLiteral")) 
+  foo=(t (concat "stringLiteral" (get blockParam "stringLiteral") hash=hash hash=hash) 
     foo=(simple-helper (hash hashKey=blockParam.foo assignParam=blockParam.bar)))}}`,
       result: `
-{{foobar-sub-component/foobar-foo hook="stringLiteral"
+{{foobar-sub-component/foobar-foo 
+  hook="stringLiteral"
   foo=
     (t
       (concat
@@ -265,9 +264,8 @@ as |block assign|}}
         hash=hash
       )
       foo=
-        (simple-helper (hash hashKey=blockParam.foo assignParam=blockParam.bar)
+        (simple-helper (hash hashKey=blockParam.foo assignParam=blockParam.bar))
     )
-  )
 }}`
     },
     {
@@ -296,9 +294,7 @@ as |block assign|}}
         <div>
           <div>
             {{#if 
-              (not
-                (and fooBarBazString selectedFooBar param param param param)
-              )
+              (not (and fooBarBazString selectedFooBar param param param param))
             }}
               hello
             {{/if}}
@@ -319,7 +315,9 @@ as |block assign|}}
       result: `
 <div local-class="
   hashKey
-  {{if (or (enabled "stringLiteral") (enabled "stringLiteral")) "stringLiteral"}}
+  {{if 
+    (or (enabled "stringLiteral") (enabled "stringLiteral"))
+    "stringLiteral"}}
 ">
   {{#if foobar.inStock}}
     hi
