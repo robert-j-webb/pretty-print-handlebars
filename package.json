@@ -5,7 +5,7 @@
   "main": "start.js",
   "scripts": {
     "test": "npm run lint && mocha --full-trace tests/.",
-    "test:watch": "watchman-make -p '**/*js' --run 'mocha --full-trace tests/.'",
+    "test:watch": "watchman-make -p '**/*js' --run 'mocha --full-trace --recursive tests/.'",
     "lint": "node node_modules/eslint/bin/eslint ."
   },
   "keywords": [

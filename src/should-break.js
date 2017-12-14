@@ -16,6 +16,7 @@ function shouldBreak(node) {
     case 'Hash':
     case 'HashPair':
     case 'ConcatStatement':
+    case 'ElementModifierStatement':
     case 'AttrNode': {
       return prevNewLine(node) + len(node) > COLUMN_BREAK;
     }

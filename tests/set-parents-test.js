@@ -12,13 +12,24 @@ chai.use(require('chai-diff'));
 describe('Set Parents', function() {
   it('all children should have parents, besides the root and path expressions', function() {
     testCases().forEach(({ test }) => {
-      glimmer.preprocess(test, {
+      const noThrow = () =>
+        glimmer.preprocess(test, {
+          plugins: {
+            ast: [setParents, throwIfNoParent]
+          }
+        });
+      expect(noThrow).to.not.throw();
+    });
+  });
+
+  it('Element Modifier Case', function() {
+    const noThrow = () =>
+      glimmer.preprocess(`<div {{mustache (param (hello)) hash=Key}}></div>`, {
         plugins: {
           ast: [setParents, throwIfNoParent]
         }
       });
-      expect(true);
-    });
+    expect(noThrow).to.not.throw();
   });
 });
 

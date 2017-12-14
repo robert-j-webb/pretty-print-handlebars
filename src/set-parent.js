@@ -10,6 +10,9 @@ function setParents() {
       HashPair(node) {
         setParent(node, node.value);
       },
+      ElementModifierStatement(node) {
+        setParent(node, [node.hash].concat(node.params));
+      },
       MustacheStatement(node) {
         setParent(node, [node.hash].concat(node.params));
       },

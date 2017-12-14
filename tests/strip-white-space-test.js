@@ -12,14 +12,19 @@ chai.use(require('chai-diff'));
 describe('Strip whitespace', function() {
   it('all text nodes should have characters without leading or trailing whitespace', function() {
     testCases().forEach(({ test }) => {
-      glimmer.preprocess(test, {
-        plugins: {
-          ast: [stripWhiteSpace, throwIfWhiteSpace]
-        }
-      });
-      expect(true);
+      const shouldNotThrow = () =>
+        glimmer.preprocess(test, {
+          plugins: {
+            ast: [stripWhiteSpace, throwIfWhiteSpace]
+          }
+        });
+      expect(shouldNotThrow).to.not.throw();
     });
   });
+
+  it('should replace double new lines with preservable text', function(){
+  
+  })
 });
 
 function throwIfWhiteSpace() {

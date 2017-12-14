@@ -124,7 +124,6 @@ describe('Glimmer-vm testing', function() {
       expect(prettyPrint(test).trim()).not.differentFrom(result.trim(), {
         showSpace: true
       });
-      throw new Error('fail')
     });
 
     it('Proper indentation with sub expressions', function() {

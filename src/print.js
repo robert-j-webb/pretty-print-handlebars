@@ -1,6 +1,5 @@
 const calcWhiteSpace = require('./calc-white-space');
 const getBody = require('./get-body');
-const splitNoParens = require('./split-no-parens');
 const shouldBreak = require('./should-break');
 
 /**
@@ -40,15 +39,28 @@ function build(ast) {
     case 'ElementNode': {
       output.push('<', ast.tag);
       const children = ast.children.filter(checkIfEmpty);
-      const joinCharacter = shouldBreak(ast) ? calcWhiteSpace(ast, 1) : ' ';
+      const needsBreak = shouldBreak(ast);
+      const joinCharacter = needsBreak ? calcWhiteSpace(ast, 1) : ' ';
       if (ast.attributes.length) {
         output.push(' ', buildEach(ast.attributes).join(joinCharacter));
+        if (ast.modifiers.length && needsBreak) {
+          output.push(calcWhiteSpace(ast, 1));
+        }
       }
       if (ast.modifiers.length) {
-        output.push(' ', buildEach(ast.modifiers).join(joinCharacter));
+        output.push(
+          ast.attributes.length && needsBreak ? '' : ' ',
+          buildEach(ast.modifiers).join(joinCharacter)
+        );
+        if (ast.comments.length && needsBreak) {
+          output.push(calcWhiteSpace(ast, 1));
+        }
       }
       if (ast.comments.length) {
-        output.push(' ', buildEach(ast.comments).join(joinCharacter));
+        output.push(
+          ast.modifiers.length && needsBreak ? '' : ' ',
+          buildEach(ast.comments).join(joinCharacter)
+        );
       }
       output.push('>');
       if (children.length > 0) {
@@ -77,7 +89,7 @@ function build(ast) {
     case 'BlockStatement':
       {
         const lines = [];
-        const needsBreak = shouldBreak(ast) && ast.hash.pairs.length === 0;
+        const needsBreak = shouldBreak(ast);
 
         if (ast['chained']) {
           lines.push(['{{else ', pathParams(ast, needsBreak), '}}'].join(''));
@@ -110,38 +122,51 @@ function build(ast) {
       {
         const body = getBody(ast);
         const isLast = body.length - 1 === body.indexOf(ast);
-        const params = pathParams(ast, shouldBreak(ast));
+        const needsBreak = shouldBreak(ast);
+        const params = pathParams(ast, needsBreak);
+        const needsNewLine = needsBreak && ast.hash.pairs.length === 0;
+        const lastParamIsSubExpression =
+          ast.params.length > 0 &&
+          ast.params[ast.params.length - 1].type === 'SubExpression';
         output.push(
-          compactJoin(['{{', params, '}}', !isLast ? calcWhiteSpace(ast) : ''])
+          compactJoin([
+            '{{',
+            params,
+            needsNewLine && !lastParamIsSubExpression
+              ? calcWhiteSpace(ast)
+              : '',
+            '}}',
+            !isLast ? calcWhiteSpace(ast) : ''
+          ])
         );
       }
       break;
     /**
-     * SubExpressions are helper invocations inside of mustache or block statements.
+     * SubExpressions are helper invocations inside of mustache, block statements
+     * or even themselves. This kind of double nesting means that they require
+     * a lot more logic when it comes to spacing them correctly.
      * {{#block (helper param hashKey=value)}}
-     * They have some of the more complex spacing rules.
      */
     case 'SubExpression':
       {
         const parentBreak = shouldBreak(ast.parent);
-        if (parentBreak) {
+        if (parentBreak && ast.parent.type !== 'SubExpression') {
           output.push(calcWhiteSpace(ast));
         }
         if (shouldBreak(ast)) {
-          const splitParams = splitNoParens(pathParams(ast))
-            .filter(str => str.trim() !== '')
-            .map(param => param.trim());
+          const needsFinalLine =
+            ast.parent.type !== 'SubExpression' &&
+            ast.parent.type !== 'HashPair' &&
+            ast.parent.type !== 'BlockStatement';
+          const params = paramsForSubExpression(ast);
           output.push(
             '(',
-            splitParams.reduce((str, param, idx, arr) => {
-              if (idx !== arr.length - 1) {
-                return str + param + calcWhiteSpace(ast, 1);
-              } else {
-                return str + param + (idx === 0 ? ' ' : '');
-              }
+            params.reduce((str, param, idx, arr) => {
+              const isLast = idx === arr.length - 1;
+              return str + param + calcWhiteSpace(ast, isLast ? 0 : 1);
             }, ''),
-            calcWhiteSpace(ast),
-            ')'
+            ')',
+            needsFinalLine ? calcWhiteSpace(ast, -1) : ''
           );
         } else {
           output.push('(', pathParams(ast), ')');
@@ -171,13 +196,16 @@ function build(ast) {
         const hash = ast.parent;
         const isLastHashPair =
           hash.pairs.indexOf(ast) === hash.pairs.length - 1;
+        const needsEndNewLine = !(
+          hash.parent.type === 'BlockStatement' && isLastHashPair
+        );
         const isFirstHashPair = hash.pairs.indexOf(ast) === 0;
 
         if (ast.shouldSpace) {
           output.push(
             isFirstHashPair ? calcWhiteSpace(ast) : '',
             `${ast.key}=${build(ast.value)}`,
-            calcWhiteSpace(ast, isLastHashPair ? -1 : 0)
+            needsEndNewLine ? calcWhiteSpace(ast, isLastHashPair ? -1 : 0) : ''
           );
         } else {
           output.push(`${ast.key}=${build(ast.value)}`);
@@ -227,6 +255,37 @@ function build(ast) {
       break;
     }
     /**
+     * Element modifier statements are mustache expressions inside of element nodes.
+     * Like the action helper for example:
+     * ```hbs
+     * <tag {{action param [hash]}}
+     * ```
+     * They are identical to mustache statements in terms of data
+     */
+    case 'ElementModifierStatement': {
+      if (shouldBreak(ast)) {
+        const isLast =
+          ast.parent.comments.length === 0 &&
+          ast.parent.modifiers.findIndex(node => ast === node) ===
+            ast.parent.modifiers.length - 1;
+        const params = paramsForSubExpression(ast).map(a => a.trim());
+        output.push(
+          calcWhiteSpace(ast),
+          '{{',
+          params.reduce((str, param, idx, arr) => {
+            const isLast = idx === arr.length - 1;
+            return str + param + (isLast ? '' : calcWhiteSpace(ast, 1));
+          }, ''),
+          calcWhiteSpace(ast),
+          '}}',
+          isLast ? calcWhiteSpace(ast, -1) : ''
+        );
+      } else {
+        output.push(compactJoin(['{{', pathParams(ast), '}}']));
+      }
+      break;
+    }
+    /**
      * Text nodes are simply nodes that contain only text.
      * <div> TextNode </div>
      * They are not keys to hashPairs, or pathExpressions.
@@ -236,14 +295,26 @@ function build(ast) {
       break;
     case 'MustacheCommentStatement':
       {
-        output.push(
-          compactJoin(['{{!--', ast.value, '--}}', calcWhiteSpace(ast)])
-        );
-      }
-      break;
-    case 'ElementModifierStatement':
-      {
-        output.push(compactJoin(['{{', pathParams(ast), '}}']));
+        const isOrphan = ast.parent.type === 'Program';
+        if (ast.value.includes('\n')) {
+          output.push(
+            compactJoin([
+              '{{!--',
+              ast.value,
+              '--}}',
+              isOrphan ? calcWhiteSpace(ast) : ''
+            ])
+          );
+        } else {
+          output.push(
+            compactJoin([
+              '{{! ',
+              ast.value.trim(),
+              '}}',
+              isOrphan ? calcWhiteSpace(ast) : ''
+            ])
+          );
+        }
       }
       break;
     /**
@@ -303,7 +374,22 @@ function buildEach(asts) {
   return asts.map(build);
 }
 
+function paramsForSubExpression(ast) {
+  return [getPath(ast), ...buildEach(ast.params), ...buildEach(ast.hash.pairs)];
+}
+
 function pathParams(ast, shouldBreak = false) {
+  return compactJoin(
+    [
+      getPath(ast),
+      buildEach(ast.params).join(shouldBreak ? calcWhiteSpace(ast, 1) : ' '),
+      build(ast.hash)
+    ],
+    ' '
+  );
+}
+
+function getPath(ast) {
   let path;
 
   switch (ast.type) {
@@ -317,25 +403,14 @@ function pathParams(ast, shouldBreak = false) {
 
       path = build(ast.path);
       break;
-    case 'PartialStatement':
-      path = build(ast.name);
-      break;
     default:
       throw new Error('unreachable');
   }
-
-  return compactJoin(
-    [
-      path,
-      buildEach(ast.params).join(shouldBreak ? calcWhiteSpace(ast, 1) : ' '),
-      build(ast.hash)
-    ],
-    ' '
-  );
+  return path;
 }
 
-function compactJoin(array, delimiter) {
-  return compact(array).join(delimiter || '');
+function compactJoin(array, delimiter = '') {
+  return compact(array).join(delimiter);
 }
 
 function getBlockParams(block) {

@@ -317,7 +317,8 @@ as |block assign|}}
   hashKey
   {{if 
     (or (enabled "stringLiteral") (enabled "stringLiteral"))
-    "stringLiteral"}}
+    "stringLiteral"
+  }}
 ">
   {{#if foobar.inStock}}
     hi
@@ -382,7 +383,7 @@ as |block assign|}}
       `,
       result: `
 {{mustacheStatement param}}
-{{!-- A rather long comment should have a new line before and after that --}}
+{{! A rather long comment should have a new line before and after that}}
 {{mustache statement}}`
     }
   ];

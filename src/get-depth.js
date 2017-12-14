@@ -14,6 +14,7 @@ function getDepth(node) {
       case 'BlockStatement':
       case 'SubExpression':
       case 'HashPair':
+      case 'ElementModifierStatement':
         num++;
     }
     parent = parent.parent;

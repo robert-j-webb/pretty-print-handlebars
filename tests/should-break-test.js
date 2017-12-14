@@ -23,18 +23,19 @@ function getSpanNode(ast) {
       return getSpanNode(ast.body.find(node => node.type === 'ElementNode'));
     }
     case 'ElementNode': {
+      if (ast.modifiers.length > 0) {
+        return getSpanNode(ast.modifiers[0]);
+      }
       const spanNode = ast.children.find(node => node.tag === 'span');
       if (spanNode) {
         return spanNode;
       }
       return getSpanNode(ast.children.find(node => node.type !== 'TextNode'));
     }
-    case 'BlockStatement': {
+    case 'BlockStatement':
+    case 'MustacheStatement':
+    case 'ElementModifierStatement':
       return ast;
-    }
-    case 'MustacheStatement': {
-      return ast;
-    }
   }
   throw new Error('span not found');
 }
@@ -109,6 +110,44 @@ describe('Should Break: Integration Testing', function() {
     const ast = getAst(hbs.trim());
     const spanNode = getSpanNode(ast);
     expect(shouldBreak(spanNode)).to.equal(true);
+  });
+
+  it('nested element modifier statement', function() {
+    const hbs = `
+  <div>
+    <div>
+      <div>
+        <div>
+          <div>
+            <div {{elementModifierStatement param param param param param param param}}>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+    const ast = getAst(hbs.trim());
+    const spanNode = getSpanNode(ast);
+    expect(shouldBreak(spanNode)).to.equal(true);
+  });
+
+  it('non breaking nested element modifier statement', function() {
+    const hbs = `
+  <div>
+    <div>
+      <div>
+        <div>
+          <div>
+            <div {{elementModifierStatement param param param param param}}>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+    const ast = getAst(hbs.trim());
+    const spanNode = getSpanNode(ast);
+    expect(shouldBreak(spanNode)).to.equal(false);
   });
 
   it('lonely mustache', function() {
